@@ -1,36 +1,41 @@
-# PRIVATE COLDSTAKING V1.0
+# Particl Private Coldstaking
 
-* **This script allows you to anonymize automatically your coldstaking rewards on your node and to redirect them automatically to the public balance of your wallet.**
-* **This script allows you to anonymize automatically your coldstaking rewards on your node and to redirect them automatically to the blind balance of your wallet.**
-* **This script allows you to anonymize automatically your coldstaking rewards on your node and to redirect them automatically to the anon balance of your wallet.**
+This script allows you to anonymize automatically your coldstaking rewards on your node and to redirect them automatically to the balance of your choice to your wallet. Receive your rewards in any of the three PART coin privacy states:
 
-* **If you already have a coldstaking node installed, this script will transform it into a private coldstaking node.**
-* **If you don't already have a coldstaking node installed, this script will create a Private coldstaking node.**
+- Public
+- Blind (Confidential Transactions)
+- Anonymous (RingCT) `recommended`
 
-* *The anonymization cycles vary from 1 to 32767seconds.*
-* *The amounts sent during each cycles of anonymization vary from ["your coldstakingbalance" * "0.00007" * "1.000"] to ["your coldstakingbalance" * "0.00007" * "1.500"]*
-* *The amounts sent during each cycles of transfer to your wallet vary from ["your coldstakingbalance" * "0.00006" * "1.000"] to ["your coldstakingbalance" * "0.00006" * "1.500"].*
+> **If you already have a coldstaking node installed**, this script will transform it into a private coldstaking node. **If you don't have a coldstaking node installed yet**, this script will create it.
 
-## DOWNLOAD
+**Notes**
 
-`git clone https://github.com/GBen1/Private-Coldstaking.git`
+- The anonymization cycles vary from 1 to 32767 seconds.
+- The amounts in each anonymization cycle vary from `<your coldstaking balance> × 0.00007 × 1` to `1.5`
+- The amounts in each transfer cycle vary from `<your coldstaking balance> × 0.00006 × 1` to `1.5`
 
-## INSTALL/REINSTALL
+## Download
 
-`bash privatecoldstaking.sh`
+Download directly via `git`:
 
-## UNINSTALL
+    git clone https://github.com/xe-nonymous/Private-Coldstaking.git
 
-`bash uninstall.sh`
+## Install/Reinstall
 
-## UPDATE YOUR NODE & GET NODE INFOS
+    bash privatecoldstaking.sh
 
-`bash update.sh`
+## Uninstall
 
-## VERIFY ACTIVE SCRIPTS & COLDSTAKING BALANCE
+    bash uninstall.sh
 
-`bash verify.sh`
+## Updating
 
-## DEBUG
+    bash update.sh
 
-`bash log.sh`
+## Check active scripts & balance
+
+    bash verify.sh
+
+## Debug
+
+    bash log.sh
