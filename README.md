@@ -18,7 +18,7 @@ This script allows you to anonymize automatically your coldstaking rewards on yo
 
 Download directly via `git`:
 
-    git clone https://github.com/xe-nonymous/Private-Coldstaking.git
+    git clone https://github.com/xe-nonymous/particl-private-coldstaking.git
 
 ## Install/Reinstall
 
