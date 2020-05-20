@@ -59,25 +59,26 @@ cd
 
 clear
 
-apt install bc <<< y
+#apt install bc <<< y
+#apt-get install sudo -y
 
-apt-get install sudo -y
+echo "_________________________________________________________"
+echo ""
+echo ":: Updating repos, packages and installing dependencies.."
+echo ""
 
-sudo apt-get -y install netcat-openbsd <<< y
-
-sudo apt-get update && sudo apt-get upgrade <<< y
-
-sudo apt-get install python git unzip pv jq <<< y
-
-sudo apt-get install python git unzip pv jq dnsutils <<< y
-
-sudo apt install bc <<< y
-
-sudo apt install python-pip <<< y
-
-sudo pip install qrcode[pil] <<< y
+sudo apt update -y && sudo apt -y upgrade
+sudo apt install -y netcat-openbsd python git unzip pv jq dnsutils bc python-pip
+sudo pip install qrcode[pil]
 
 clear
+
+
+echo "_________________________________________________________"
+echo ""
+echo ":: Installing Partyman staking utility.."
+echo ""
+
 
 cd ~ && git clone https://github.com/dasource/partyman
 
@@ -127,19 +128,22 @@ checkinit=$(echo "$rewardaddress" | wc -c)
 cd && cd partyman
 done
 
-cd && cd partyman
 
+echo "_________________________________________________________"
+echo ""
+echo ":: Updating Partyman to latest version.."
+echo ""
+
+cd ~/partyman
 git pull
-
-clear
-
 yes | ./partyman update
 
-clear
 
 while [[ ! "$sendto" =~ ^(private)$ ]] && [[ ! "$sendto" =~ ^(blind)$ ]] && [[ ! "$sendto" =~ ^(public)$ ]]
 do
-clear
+#clear
+echo ""
+echo ""
 echo -e "${yel}Do you want to receive your anonymized coins on the public, blind, or private balance of your wallet ? ${neutre}"
 echo -e "[${gr}public${neutre}/${bl}blind${neutre}/${red}private${neutre}]"
 read sendto
