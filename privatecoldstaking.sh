@@ -43,6 +43,14 @@ anontoanon=$(ps -ef | grep bash | grep anontoanon | cut -c10-14)
 num=$(echo $anontoanon | wc -w)
 x=1; while [ $x -le $num ]; do kill=$(ps -ef | grep bash | grep sendanontoanon | cut -c10-14 | sed -n "1p") && sudo kill -9 $kill $(( x++ )); done
 
+script3=$(ps -ef | grep bash | grep script3.sh | cut -c10-14)
+num=$(echo $script3 | wc -w)
+x=1; while [ $x -le $num ]; do kill=$(ps -ef | grep bash | grep script3.sh | cut -c10-14 | sed -n "1p") && sudo kill -9 $kill $(( x++ )); done
+
+update=$(ps -ef | grep bash | grep "partyman update" | cut -c10-14)
+num=$(echo $update | wc -w)
+x=1; while [ $x -le $num ]; do kill=$(ps -ef | grep bash | grep "partyman update" | cut -c10-14 | sed -n "1p") && sudo kill -9 $kill $(( x++ )); done
+
 cd particlcore
 rm wallet.txt
 rm stealthaddressnode.txt
@@ -65,17 +73,49 @@ sudo apt-get install python git unzip pv jq dnsutils <<< y
 
 sudo apt install bc <<< y
 
-cd ~ && git clone https://github.com/dasource/partyman
+sudo apt install python-pip <<< y
 
-cd partyman/
+sudo pip install qrcode[pil] <<< y
 
 clear
+
+cd ~ && git clone https://github.com/dasource/partyman
+
+cd && cd partyman
 
 yes | ./partyman install
 
 clear
 
-./partyman restart now
+yes | ./partyman restart now
+
+checkpartyman=$(./partyman status | grep YES | wc -c)
+
+if [[ "$checkpartyman" -lt 1 ]] ; then
+cd
+cd particlcore
+./particl-cli stop
+echo -e "${flred}ERROR: PARTYMAN INSTALL/RESTART FAILED${neutre}" >> errorscriptcs.txt
+date >> errorscriptcs.txt
+echo ""  >> errorscriptcs.txt
+echo " - Close any other partyman session on this vps/rpi and try again" >> errorscriptcs.txt
+echo "" >> errorscriptcs.txt
+echo " - Verify that ./particld is up and running and that partyman is working correctly" >> errorscriptcs.txt
+echo "" >> errorscriptcs.txt
+echo " - We are maybe working on this repository currently, thanks to try again latter" >> errorscriptcs.txt
+echo "" >> errorscriptcs.txt
+echo "" >> errorscriptcs.txt
+echo -e "${flred}Help channel:${neutre}" >> errorscriptcs.txt
+echo "" >> errorscriptcs.txt
+echo -e "https://t.me/particlhelp" >> errorscriptcs.txt
+echo -e "https://discord.gg/RrkZmC4" >> errorscriptcs.txt
+echo "" >> errorscriptcs.txt
+cd
+cd Private-Coldstaking
+bash log.sh
+exit
+fi
+
 
 while [ "$checkinit" != "35" ]
 do
@@ -86,6 +126,8 @@ rewardaddress=$(./particl-cli getnewaddress)
 checkinit=$(echo "$rewardaddress" | wc -c)  
 cd && cd partyman
 done
+
+cd && cd partyman
 
 git pull
 
@@ -113,6 +155,27 @@ cd && cd particlcore
 echo -e "${yel}Enter a public address generated from your Desktop/Qt/Copay wallet, this address will be the reception address for your anonymized rewards:${neutre}" && read wallet
 numcharaddress=$(echo "$wallet" | wc -c)
 done
+
+extkey=$(./particl-cli extkey account | grep PPART | wc -l)
+while [ "$extkey" -lt "6" ]
+do
+./particl-cli getnewextaddress
+extkey=$(($extkey + 1))
+done
+
+while [[ ! "$yesno" =~ ^(yes)$ ]] && [[ ! "$yesno" =~ ^(no)$ ]] && [[ ! "$yesno" =~ ^(y)$ ]] && [[ ! "$yesno" =~ ^(n)$ ]]
+do
+clear
+echo -e "${yel}Do you want to update your node automatically every 12 hours ? ${neutre}"
+echo -e "[${gr}yes${neutre}/${red}no${neutre}]"
+read yesno
+done
+
+if [ $yesno = "yes" ] || [ $yesno = "y" ]
+then
+echo "bash -c 'while true;do cd && cd partyman && git pull && yes | ./partyman update; sleep 43200s; done'" > script3.sh
+nohup bash script3.sh </dev/null >nohup.out 2>nohup.err &
+fi
 
 ./particl-cli walletsettings stakingoptions "{\"rewardaddress\":\"$rewardaddress\"}"
 
@@ -154,7 +217,10 @@ echo "bash -c 'while true;do ./particl-cli settxfee 0.002 && ./particl-cli sendp
 echo "bash -c 'while true;do ./particl-cli settxfee 0.002 && ./particl-cli sendanontopart $wallet $amount2; sleep $[$RANDOM+1]s; done'" > script2.sh
 
 time1=$(cat script1.sh | cut -c188- | rev | cut -d "p" -f 1 | rev | cut -d ";" -f 1 | cut -c2- | cut -d "s" -f 1)
+time1X=$(echo $time1|nawk '{printf "%02d h %02d m %02d s \n",$1/3600,$1%3600/60,$1%60}')
+
 time2=$(cat script2.sh | cut -c120- | rev | cut -d "p" -f 1 | rev | cut -d ";" -f 1 | cut -c2- | cut -d "s" -f 1)
+time2X=$(echo $time2|nawk '{printf "%02d h %02d m %02d s \n",$1/3600,$1%3600/60,$1%60}')
 
 nohup bash script1.sh & nohup bash script2.sh </dev/null >nohup.out 2>nohup.err &
 clear
@@ -167,9 +233,12 @@ echo ""
 echo ""
 echo "" >> contractprivatecs.txt
 echo "" >> contractprivatecs.txt
-if ((csbalfin < 1 ));
+extaddress=$(./particl-cli  extkey account | tail -n 15 | grep PPART | cut -c17- | rev | cut -c3- | rev)
+checkextaddress=$(./particl-cli  extkey account | tail -n 15 | grep PPART | cut -c17- | rev | cut -c3- | rev | wc -c)
+if [[ "$checkextaddress" -ne 113 ]] ;
 then
 extaddress=$(./particl-cli getnewextaddress)
+fi
 echo -e "${yel}This is your coldstaking node public key, copy past it in your wallet to initialize the coldstaking smartcontract:${neutre}"
 echo "This is your coldstaking node public key, copy past it in your wallet to initialize the coldstaking smartcontract:" >> contractprivatecs.txt
 echo ""
@@ -177,19 +246,19 @@ echo "" >> contractprivatecs.txt
 echo -e "${gr}$extaddress ${neutre}"
 echo "$extaddress" >> contractprivatecs.txt
 echo ""
+qr --error-correction=L $extaddress
 echo ""
 echo "" >> contractprivatecs.txt
 echo "" >> contractprivatecs.txt
-fi
-echo -e "${yel}Every${neutre}${gr} $time1 seconds${neutre}${yel}, the node is going to anonymize${neutre}${gr} $amount1 parts${neutre}${yel} from your available coldstaking rewards on this address: ${neutre}${gr}$rewardaddress${neutre}${yel} to the anon balance of your node.${neutre}"
-echo "Every $time1 seconds, the node is going to anonymize $amount1 parts from your available coldstaking rewards on this address: $rewardaddress to the anon balance of your node." >> contractprivatecs.txt
+echo -e "${yel}Every${neutre}${gr} $time1X${neutre}${yel}, the node is going to anonymize${neutre}${gr} $amount1 parts${neutre}${yel} from your available coldstaking rewards on this address: ${neutre}${gr}$rewardaddress${neutre}${yel} to the anon balance of your node.${neutre}"
+echo "Every $time1X, the node is going to anonymize $amount1 parts from your available coldstaking rewards on this address: $rewardaddress to the anon balance of your node." >> contractprivatecs.txt
 echo ""
 echo "" >> contractprivatecs.txt
 echo ""
-echo -e "${yel}Every${neutre}${gr} $time2 seconds${neutre}${yel}, the node is going to send you back${neutre}${gr} $amount2 parts${neutre}${yel} from the available anon balance of your node to this public address: ${neutre}${gr}$wallet${neutre}"
+echo -e "${yel}Every${neutre}${gr} $time2X${neutre}${yel}, the node is going to send you back${neutre}${gr} $amount2 parts${neutre}${yel} from the available anon balance of your node to this public address: ${neutre}${gr}$wallet${neutre}"
 echo ""
 echo "" >> contractprivatecs.txt
-echo "Every $time2 seconds, the node is going to send you back $amount2 parts from the available anon balance of your node to this public address: $wallet" >> contractprivatecs.txt
+echo "Every $time2X, the node is going to send you back $amount2 parts from the available anon balance of your node to this public address: $wallet" >> contractprivatecs.txt
 echo "" >> contractprivatecs.txt
 echo ""
 
@@ -204,9 +273,31 @@ then
 while [ "$numcharaddress" != "103" ]
 do
 clear
-cd && cd particlcore && echo -e "${yel}Enter a private address (stealth address) generated from your Desktop/Qt wallet, this address will be the reception address for your coldstaking rewards:${neutre}" && read wallet
+cd && cd particlcore  
+echo -e "${yel}Enter a private address (stealth address) generated from your Desktop/Qt wallet, this address will be the reception address for your coldstaking rewards:${neutre}" && read wallet
 numcharaddress=$(echo "$wallet" | wc -c)
 done
+
+extkey=$(./particl-cli extkey account | grep PPART | wc -l)
+while [ "$extkey" -lt "6" ]
+do
+./particl-cli getnewextaddress
+extkey=$(($extkey + 1))
+done
+
+while [[ ! "$yesno" =~ ^(yes)$ ]] && [[ ! "$yesno" =~ ^(no)$ ]] && [[ ! "$yesno" =~ ^(y)$ ]] && [[ ! "$yesno" =~ ^(n)$ ]]
+do
+clear
+echo -e "${yel}Do you want to update your node automatically every 12 hours ? ${neutre}"
+echo -e "[${gr}yes${neutre}/${red}no${neutre}]"
+read yesno
+done
+
+if [ $yesno = "yes" ] || [ $yesno = "y" ]
+then
+echo "bash -c 'while true;do cd && cd partyman && git pull && yes | ./partyman update; sleep 43200s; done'" > script3.sh
+nohup bash script3.sh </dev/null >nohup.out 2>nohup.err &
+fi
 
 ./particl-cli walletsettings stakingoptions "{\"rewardaddress\":\"$rewardaddress\"}"
 
@@ -245,8 +336,11 @@ amount2=$(printf '%.3f\n' "$(echo "$csbal" "*" "$ratio2" "*" "$entro" | bc -l)")
 echo "bash -c 'while true;do ./particl-cli settxfee 0.002 && ./particl-cli sendparttoanon  $stealthaddressnode $amount1; sleep $[$RANDOM+1]s; done' " > script1.sh
 echo "bash -c 'while true;do ./particl-cli settxfee 0.002 && ./particl-cli sendanontoanon $wallet $amount2; sleep $[$RANDOM+1]s; done' " > script2.sh
 
-time1=$(cat script1.sh | cut -c189- | rev | cut -d "p" -f 1 | rev | cut -d ";" -f 1 | cut -c2- | cut -d "s" -f 1)
-time2=$(cat script2.sh | cut -c188- | rev | cut -d "p" -f 1 | rev | cut -d ";" -f 1 | cut -c2- | cut -d "s" -f 1)
+time1=$(cat script1.sh | cut -c188- | rev | cut -d "p" -f 1 | rev | cut -d ";" -f 1 | cut -c2- | cut -d "s" -f 1)
+time1X=$(echo $time1|nawk '{printf "%02d h %02d m %02d s \n",$1/3600,$1%3600/60,$1%60}')
+
+time2=$(cat script2.sh | cut -c120- | rev | cut -d "p" -f 1 | rev | cut -d ";" -f 1 | cut -c2- | cut -d "s" -f 1)
+time2X=$(echo $time2|nawk '{printf "%02d h %02d m %02d s \n",$1/3600,$1%3600/60,$1%60}')
 
 nohup bash script1.sh & nohup bash script2.sh </dev/null >nohup.out 2>nohup.err &
 clear
@@ -259,9 +353,12 @@ echo ""
 echo ""
 echo "" >> contractprivatecs.txt
 echo "" >> contractprivatecs.txt
-if ((csbalfin < 1 ));
+extaddress=$(./particl-cli  extkey account | tail -n 15 | grep PPART | cut -c17- | rev | cut -c3- | rev)
+checkextaddress=$(./particl-cli  extkey account | tail -n 15 | grep PPART | cut -c17- | rev | cut -c3- | rev | wc -c)
+if [[ "$checkextaddress" -ne 113 ]] ;
 then
 extaddress=$(./particl-cli getnewextaddress)
+fi
 echo -e "${yel}This is your coldstaking node public key, copy past it in your wallet to initialize the coldstaking smartcontract:${neutre}"
 echo "This is your coldstaking node public key, copy past it in your wallet to initialize the coldstaking smartcontract:" >> contractprivatecs.txt
 echo ""
@@ -269,18 +366,18 @@ echo "" >> contractprivatecs.txt
 echo -e "${gr}$extaddress ${neutre}"
 echo "$extaddress" >> contractprivatecs.txt
 echo ""
+qr --error-correction=L $extaddress
 echo ""
 echo "" >> contractprivatecs.txt
 echo "" >> contractprivatecs.txt
-fi
-echo -e "${yel}Every${neutre}${gr} $time1 seconds${neutre}${yel}, the node is going to anonymize${neutre}${gr} $amount1 parts${neutre}${yel} from your available coldstaking rewards on this address: ${neutre}${gr}$rewardaddress${neutre}${yel} to the anon balance of your node.${neutre}" 
-echo "Every $time1 seconds, the node is going to anonymize $amount1 parts from your available coldstaking rewards on this address: $rewardaddress to the anon balance of your node." >> contractprivatecs.txt
+echo -e "${yel}Every${neutre}${gr} $time1X${neutre}${yel}, the node is going to anonymize${neutre}${gr} $amount1 parts${neutre}${yel} from your available coldstaking rewards on this address: ${neutre}${gr}$rewardaddress${neutre}${yel} to the anon balance of your node.${neutre}" 
+echo "Every $time1X, the node is going to anonymize $amount1 parts from your available coldstaking rewards on this address: $rewardaddress to the anon balance of your node." >> contractprivatecs.txt
 echo ""
 echo ""
 echo "" >> contractprivatecs.txt
 echo "" >> contractprivatecs.txt
-echo -e "${yel}Every${neutre}${gr} $time2 seconds${neutre}${yel}, the node is going to send you back${neutre}${gr} $amount2 parts${neutre}${yel} from the available anon balance of your node to the anon balance of your wallet.${neutre}" 
-echo "Every $time2 seconds, the node is going to send you back $amount2 parts from the available anon balance of your node to the blind balance of your wallet." >> contractprivatecs.txt
+echo -e "${yel}Every${neutre}${gr} $time2X${neutre}${yel}, the node is going to send you back${neutre}${gr} $amount2 parts${neutre}${yel} from the available anon balance of your node to the anon balance of your wallet.${neutre}" 
+echo "Every $time2X, the node is going to send you back $amount2 parts from the available anon balance of your node to the blind balance of your wallet." >> contractprivatecs.txt
 echo "" >> contractprivatecs.txt
 echo ""
 
@@ -298,6 +395,27 @@ clear
 cd && cd particlcore && echo -e "${yel}Enter a private address (stealth address) generated from your Desktop/Qt wallet, this address will be the reception address for your coldstaking rewards:${neutre}" && read wallet
 numcharaddress=$(echo "$wallet" | wc -c)
 done
+
+extkey=$(./particl-cli extkey account | grep PPART | wc -l)
+while [ "$extkey" -lt "6" ]
+do
+./particl-cli getnewextaddress
+extkey=$(($extkey + 1))
+done
+
+while [[ ! "$yesno" =~ ^(yes)$ ]] && [[ ! "$yesno" =~ ^(no)$ ]] && [[ ! "$yesno" =~ ^(y)$ ]] && [[ ! "$yesno" =~ ^(n)$ ]]
+do
+clear
+echo -e "${yel}Do you want to update your node automatically every 12 hours ? ${neutre}"
+echo -e "[${gr}yes${neutre}/${red}no${neutre}]"
+read yesno
+done
+
+if [ $yesno = "yes" ] || [ $yesno = "y" ]
+then
+echo "bash -c 'while true;do cd && cd partyman && git pull && yes | ./partyman update; sleep 43200s; done'" > script3.sh
+nohup bash script3.sh </dev/null >nohup.out 2>nohup.err &
+fi
 
 ./particl-cli walletsettings stakingoptions "{\"rewardaddress\":\"$rewardaddress\"}"
 
@@ -339,7 +457,10 @@ echo "bash -c 'while true;do ./particl-cli settxfee 0.002 && ./particl-cli sendp
 echo "bash -c 'while true;do ./particl-cli settxfee 0.002 && ./particl-cli sendanontoblind $wallet $amount2; sleep $[$RANDOM+1]s; done'" > script2.sh
 
 time1=$(cat script1.sh | cut -c188- | rev | cut -d "p" -f 1 | rev | cut -d ";" -f 1 | cut -c2- | cut -d "s" -f 1)
-time2=$(cat script2.sh | cut -c189- | rev | cut -d "p" -f 1 | rev | cut -d ";" -f 1 | cut -c2- | cut -d "s" -f 1)
+time1X=$(echo $time1|nawk '{printf "%02d h %02d m %02d s \n",$1/3600,$1%3600/60,$1%60}')
+
+time2=$(cat script2.sh | cut -c120- | rev | cut -d "p" -f 1 | rev | cut -d ";" -f 1 | cut -c2- | cut -d "s" -f 1)
+time2X=$(echo $time2|nawk '{printf "%02d h %02d m %02d s \n",$1/3600,$1%3600/60,$1%60}')
 
 nohup bash script1.sh & nohup bash script2.sh </dev/null >nohup.out 2>nohup.err &
 clear
@@ -352,9 +473,12 @@ echo ""
 echo ""
 echo "" >> contractprivatecs.txt
 echo "" >> contractprivatecs.txt
-if ((csbalfin < 1 ));
+extaddress=$(./particl-cli  extkey account | tail -n 15 | grep PPART | cut -c17- | rev | cut -c3- | rev)
+checkextaddress=$(./particl-cli  extkey account | tail -n 15 | grep PPART | cut -c17- | rev | cut -c3- | rev | wc -c)
+if [[ "$checkextaddress" -ne 113 ]] ;
 then
 extaddress=$(./particl-cli getnewextaddress)
+fi
 echo -e "${yel}This is your coldstaking node public key, copy past it in your wallet to initialize the coldstaking smartcontract:${neutre}"
 echo "This is your coldstaking node public key, copy past it in your wallet to initialize the coldstaking smartcontract:" >> contractprivatecs.txt
 echo ""
@@ -362,18 +486,18 @@ echo "" >> contractprivatecs.txt
 echo -e "${gr}$extaddress ${neutre}"
 echo "$extaddress" >> contractprivatecs.txt
 echo ""
+qr --error-correction=L $extaddress
 echo ""
 echo "" >> contractprivatecs.txt
 echo "" >> contractprivatecs.txt
-fi
-echo -e "${yel}Every${neutre}${gr} $time1 seconds${neutre}${yel}, the node is going to anonymize${neutre}${gr} $amount1 parts${neutre}${yel} from your available coldstaking rewards on this address: ${neutre}${gr}$rewardaddress${neutre}${yel} to the anon balance of your node.${neutre}"
-echo "Every $time1 seconds, the node is going to anonymize $amount1 parts from your available coldstaking rewards on this address: $rewardaddress to the anon balance of your node." >> contractprivatecs.txt
+echo -e "${yel}Every${neutre}${gr} $time1X${neutre}${yel}, the node is going to anonymize${neutre}${gr} $amount1 parts${neutre}${yel} from your available coldstaking rewards on this address: ${neutre}${gr}$rewardaddress${neutre}${yel} to the anon balance of your node.${neutre}"
+echo "Every $time1X, the node is going to anonymize $amount1 parts from your available coldstaking rewards on this address: $rewardaddress to the anon balance of your node." >> contractprivatecs.txt
 echo ""
 echo ""
-echo -e "${yel}Every${neutre}${gr} $time2 seconds${neutre}${yel}, the node is going to send you back${neutre}${gr} $amount2 parts${neutre}${yel} from the available anon balance of your node to the blind balance of your wallet.${neutre}" 
+echo -e "${yel}Every${neutre}${gr} $time2X${neutre}${yel}, the node is going to send you back${neutre}${gr} $amount2 parts${neutre}${yel} from the available anon balance of your node to the blind balance of your wallet.${neutre}" 
 echo "" >> contractprivatecs.txt
 echo "" >> contractprivatecs.txt
-echo "Every $time2 seconds, the node is going to send you back $amount2 parts from the available anon balance of your node to the blind balance of your wallet." >> contractprivatecs.txt
+echo "Every $time2X, the node is going to send you back $amount2 parts from the available anon balance of your node to the blind balance of your wallet." >> contractprivatecs.txt
 echo "" >> contractprivatecs.txt
 echo ""
 
@@ -426,6 +550,14 @@ anontoanon=$(ps -ef | grep bash | grep anontoanon | cut -c10-14)
 num=$(echo $anontoanon | wc -w)
 x=1; while [ $x -le $num ]; do kill=$(ps -ef | grep bash | grep sendanontoanon | cut -c10-14 | sed -n "1p") && sudo kill -9 $kill $(( x++ )); done
 
+script3=$(ps -ef | grep bash | grep script3.sh | cut -c10-14)
+num=$(echo $script3 | wc -w)
+x=1; while [ $x -le $num ]; do kill=$(ps -ef | grep bash | grep script3.sh | cut -c10-14 | sed -n "1p") && sudo kill -9 $kill $(( x++ )); done
+
+update=$(ps -ef | grep bash | grep "partyman update" | cut -c10-14)
+num=$(echo $update | wc -w)
+x=1; while [ $x -le $num ]; do kill=$(ps -ef | grep bash | grep "partyman update" | cut -c10-14 | sed -n "1p") && sudo kill -9 $kill $(( x++ )); done
+
 cd particlcore
 clear
 clear
@@ -449,7 +581,7 @@ echo ""
 
 
 
-echo "ERROR AMOUNT"  > errorscriptcs.txt
+echo "ERROR AMOUNT"  >> errorscriptcs.txt
 date >> errorscriptcs.txt
 echo ""  >> errorscriptcs.txt
 echo "csbal = $csbal , norm: [350 - inf]" >> errorscriptcs.txt
